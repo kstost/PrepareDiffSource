@@ -37,6 +37,13 @@ def genPath(desirePath):
    except Exception as e:
       pass
 
+def is_num(val):
+	try:
+		int(val)
+		return True
+	except Exception as e:
+		return False
+
 # -------------------------------------
 # $ git credential-osxkeychain erase
 # host=github.com
@@ -47,9 +54,17 @@ current_path = shell_exec('cd ~;pwd').strip()
 base_path = current_path+'/.tmp_work_for_git_'+genRandom()
 compare_dir = current_path+'/Downloads/GITHUB_PROJECT_COMPARE/'
 if len(sys.argv) >= 5:
-	chkl={}
 	github_id = sys.argv[1]
-	compare = [int(sys.argv[3]),int(sys.argv[4])]
+	if is_num(sys.argv[3]):
+		compare_lst = [int(sys.argv[3]),int(sys.argv[4])]
+		compare_local = False
+	else:
+		compare_lst = [sys.argv[3],int(sys.argv[4])]
+		compare_local = os.path.abspath(sys.argv[3])
+		if not is_dir(compare_local):
+			compare_lst = [0,int(sys.argv[4])]
+			compare_local = False
+
 	project_id = sys.argv[2]
 	random_str = genRandom()
 	path_ = ""+base_path+"/"+random_str+""
@@ -60,7 +75,10 @@ if len(sys.argv) >= 5:
 	shell_exec("rm -rf "+compare_dir)
 	shell_exec("mkdir -p "+compare_dir)
 	cnt = 0
-	for no in compare:
+	ffwe = compare_lst
+	if not is_num(ffwe[0]):
+		ffwe = [0, ffwe[1]]
+	for no in ffwe:
 		if len(list_) > no and list_[no].find(' ') > -1:
 			cnt += 1
 			kks = list_[no].split(' ')[1]
@@ -69,7 +87,12 @@ if len(sys.argv) >= 5:
 			shell_exec("cd "+base_path+"/"+cl+"/"+project_id+";git checkout "+kks)
 			shell_exec("mv "+base_path+"/"+cl+"/"+project_id+" "+compare_dir+"/"+cl)
 			shell_exec("rm -rf "+compare_dir+"/"+cl+"/.git")
-			chkl[str(cnt)]=kks
+	cl = '1'
+	if compare_local and is_dir(compare_local) and is_dir(compare_dir+'/'+cl):
+		shell_exec('rm -rf '+compare_dir+'/'+cl)
+		shell_exec('cp -R '+compare_local+' '+compare_dir+'/'+cl)
+		shell_exec("rm -rf "+compare_dir+"/"+cl+"/.git")
+
 	if cnt < 2:
 		shell_exec("rm -rf "+compare_dir)
 		print '-'*80
@@ -103,14 +126,12 @@ if len(sys.argv) >= 5:
 		for no in shell_exec('ls '+compare_dir).split('\n'):
 			old_name = None
 			new_name = None
-			chkk = chkl[no.replace('_', '')]
-			chkk = ''
 			if no.find('_') != -1:
 				old_name = no
-				new_name = 'trimmed_'+(no.replace('_',''))+'_'+chkk
+				new_name = 'trimmed_'+(no.replace('_',''))+'_'
 			else:
 				old_name = no
-				new_name = 'rawdata_'+no+'_'+chkk
+				new_name = 'rawdata_'+no+'_'
 			if old_name and new_name:
 				shell_exec('cd '+compare_dir+';mv '+old_name+' '+new_name)
 		print '-'*80
@@ -132,4 +153,7 @@ else:
 	print '1. place '+get_script_name()+' file on your pc'
 	print '2. turn on terminal app and type below'
 	print '   python '+get_script_name()+' kstost PrepareDiffSource 0 1'
+	print ''
+	print '[How to compare with local]'
+	print '   python '+get_script_name()+' kstost PrepareDiffSource /Users/kstost/Downloads/project 1'
 	print '-'*80
