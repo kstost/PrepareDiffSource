@@ -1,8 +1,56 @@
 # -*- coding: utf-8 -*-
 import os, sys, hashlib, re
 
-def genRandom():
+def is_safe_name(fn): #qq
+	ddfe = fn.find('"') == -1 and fn.find("'") == -1 and fn.find("`") == -1
+	if not ddfe:
+		print "WRONG NAME: "+fn
+	return ddfe
+
+def copy_itm(pl1, dff, rrr=False): #qq
+	rr = ''
+	if rrr:
+		rr = '-R'
+	if is_safe_name(pl1) and is_safe_name(dff):
+		shell_exec('cp '+rr+' "'+pl1+'" "'+dff+'"')
+
+def pull_and_get_commithashes(path_, github_id, project_id): #qq
+	ddd = []
+	if is_safe_name(path_) and is_safe_name(github_id) and is_safe_name(project_id):
+		code = ""
+		code += 'cd "'+path_+'";'
+		code += 'git clone "https://github.com/'+github_id+'/'+project_id+'.git/";'
+		code += "cd `ls`; git config pager.diff false; git config --global core.pager cat; git log | grep '^commit';"
+		ddd = shell_exec(code).split('\n')
+	return ddd
+
+def getHomePath(): #qq
+	return shell_exec('cd ~;pwd').strip()
+
+def rmItem(path): #qq
+	if is_safe_name(path):
+		shell_exec('rm -rf "'+path+'"')
+
+def genRandom(): #qq
 	return shell_exec("openssl rand -base64 32 | md5").strip()
+
+def list_files(compare_dir): #qq
+	ddd = []
+	if is_safe_name(compare_dir):
+		ddd = shell_exec('ls "'+compare_dir+'"').strip().split('\n')
+	return ddd
+
+def git_checkout(path, hashkey): #qq
+	if is_safe_name(path) and is_safe_name(hashkey):
+		shell_exec('cd "'+path+'";git checkout "'+hashkey+'"')
+
+def moveItm(bpp, cdc, path=''): #qq
+	if is_safe_name(bpp) and is_safe_name(cdc):
+		if len(path) > 0:
+			if is_safe_name(path):
+				shell_exec('cd "'+path+'";mv "'+bpp+'" "'+cdc+'"')
+		else:
+			shell_exec('mv "'+bpp+'" "'+cdc+'"')
 
 def shell_exec(cmd):
 	cmd_ = os.popen(cmd)
@@ -44,13 +92,10 @@ def is_num(val):
 	except Exception as e:
 		return False
 
-def rmItem(path):
-	shell_exec("rm -rf "+path)	
-
 def compare_two_sources(compare_dir, nMode=False):
 	compare_dir = os.path.abspath(compare_dir)+'/'
 	if is_dir(compare_dir):
-		fde = shell_exec('ls '+compare_dir).strip().split()
+		fde = list_files(compare_dir)
 		if False:
 			for nm in fde:
 				print nm
@@ -73,11 +118,12 @@ def compare_two_sources(compare_dir, nMode=False):
 						pl2 = pth2+pppth
 						oo_p1=pth1+tail+'/'
 						if not is_dir(oo_p1):
-							shell_exec('mkdir -p '+oo_p1)
+							genPath(oo_p1)
 						md1 = md5file(pl1)
 						md2 = md5file(pl2)
 						if not (md1 and md2 and (md1==md2)):
-							shell_exec('cp '+pl1+' '+oo_p1+(pppth.replace('/','／')))
+							dff = oo_p1+(pppth.replace('/','／'))
+							copy_itm(pl1, dff)
 				cnt+=1
 # -------------------------------------
 # $ git credential-osxkeychain erase
@@ -91,7 +137,7 @@ if len(sys.argv) == 2:
 		compare_two_sources(path)
 	sys.exit()
 
-current_path = shell_exec('cd ~;pwd').strip()
+current_path = getHomePath()
 base_path = current_path+'/.tmp_work_for_git_'+genRandom()
 compare_dir = current_path+'/Downloads/GITHUB_PROJECT_COMPARE/'
 if len(sys.argv) >= 5:
@@ -109,13 +155,12 @@ if len(sys.argv) >= 5:
 	project_id = sys.argv[2]
 	random_str = genRandom()
 	path_ = base_path+"/"+random_str
-	code = ""
-	code += "rm -rf "+base_path+"; mkdir -p "+path_+";"
-	code += "cd "+path_+";git clone https://github.com/"+github_id+"/"+project_id+".git/;"
-	code += "cd `ls`; git config pager.diff false; git config --global core.pager cat; git log | grep '^commit';"
-	list_ = shell_exec(code).split('\n')
+	rmItem(base_path)
+	genPath(path_)
+
+	list_ = pull_and_get_commithashes(path_, github_id, project_id)
 	rmItem(compare_dir)
-	shell_exec("mkdir -p "+compare_dir)
+	genPath(compare_dir)
 	cnt = 0
 	ffwe = compare_lst
 	if not is_num(ffwe[0]):
@@ -127,15 +172,16 @@ if len(sys.argv) >= 5:
 			cl = str(cnt)
 			bpc = base_path+"/"+cl
 			cdc = compare_dir+"/"+cl
-			shell_exec("cp -R "+path_+" "+bpc)
-			shell_exec("cd "+bpc+"/"+project_id+";git checkout "+kks)
-			shell_exec("mv "+bpc+"/"+project_id+" "+cdc)
+			copy_itm(path_, bpc, True)
+			bpp = bpc+"/"+project_id
+			git_checkout(bpp, kks)
+			moveItm(bpp, cdc)
 			rmItem(cdc+"/.git")
 	cl = '1'
 	cdc = compare_dir+'/'+cl
 	if compare_local and is_dir(compare_local) and is_dir(cdc):
 		rmItem(cdc)
-		shell_exec('cp -R '+compare_local+' '+cdc)
+		copy_itm(compare_local, cdc, True)		
 		rmItem(cdc+'/.git')
 
 	if cnt < 2:
@@ -145,7 +191,7 @@ if len(sys.argv) >= 5:
 		print '-'*80
 	else:
 		compare_two_sources(compare_dir, True)
-		for no in shell_exec('ls '+compare_dir).split('\n'):
+		for no in list_files(compare_dir):
 			old_name = None
 			new_name = None
 			if no.find('_') != -1:
@@ -155,10 +201,10 @@ if len(sys.argv) >= 5:
 				old_name = no
 				new_name = 'rawdata_'+no+'_'
 			if old_name and new_name:
-				shell_exec('cd '+compare_dir+';mv '+old_name+' '+new_name)
+				moveItm(old_name, new_name, compare_dir)
 		print '-'*80
 		print 'Files are downloaded on '+compare_dir+'\n'
-		for no in shell_exec('ls '+compare_dir).split('\n'):
+		for no in list_files(compare_dir):
 			print compare_dir+no
 		print '-'*80
 	rmItem(base_path)
