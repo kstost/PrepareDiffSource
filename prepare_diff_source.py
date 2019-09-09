@@ -44,12 +44,53 @@ def is_num(val):
 	except Exception as e:
 		return False
 
+def rmItem(path):
+	shell_exec("rm -rf "+path)	
+
+def compare_two_sources(compare_dir, nMode=False):
+	compare_dir = os.path.abspath(compare_dir)+'/'
+	if is_dir(compare_dir):
+		fde = shell_exec('ls '+compare_dir).strip().split()
+		if False:
+			for nm in fde:
+				print nm
+		if len(fde) == 2:
+			cnt = 0
+			tail = '_'
+			if not nMode:
+				tail += genRandom()
+			for nn in fde:
+				scan_path = compare_dir+nn
+				for root, dirs, files in os.walk(scan_path):
+					for file in files:
+						filepath = str(root+'/'+file)
+						pppth = filepath[len(scan_path):len(filepath)]
+						pth1 = (compare_dir+fde[cnt])
+						pth2 = (compare_dir+fde[0])
+						if cnt == 0:
+							pth2 = (compare_dir+fde[cnt+1])
+						pl1 = pth1+pppth
+						pl2 = pth2+pppth
+						oo_p1=pth1+tail+'/'
+						if not is_dir(oo_p1):
+							shell_exec('mkdir -p '+oo_p1)
+						md1 = md5file(pl1)
+						md2 = md5file(pl2)
+						if not (md1 and md2 and (md1==md2)):
+							shell_exec('cp '+pl1+' '+oo_p1+(pppth.replace('/','／')))
+				cnt+=1
 # -------------------------------------
 # $ git credential-osxkeychain erase
 # host=github.com
 # protocol=https
 # <press return>
 # -------------------------------------
+if len(sys.argv) == 2:
+	path = os.path.abspath(sys.argv[1])
+	if is_dir(path):
+		compare_two_sources(path)
+	sys.exit()
+
 current_path = shell_exec('cd ~;pwd').strip()
 base_path = current_path+'/.tmp_work_for_git_'+genRandom()
 compare_dir = current_path+'/Downloads/GITHUB_PROJECT_COMPARE/'
@@ -67,12 +108,13 @@ if len(sys.argv) >= 5:
 
 	project_id = sys.argv[2]
 	random_str = genRandom()
-	path_ = ""+base_path+"/"+random_str+""
+	path_ = base_path+"/"+random_str
 	code = ""
-	code += "rm -rf "+base_path+"; mkdir -p "+base_path+"/"+random_str+";"
-	code += "cd "+base_path+"/"+random_str+";git clone https://github.com/"+github_id+"/"+project_id+".git/;cd `ls`; git config pager.diff false; git config --global core.pager cat; git log | grep '^commit';"
+	code += "rm -rf "+base_path+"; mkdir -p "+path_+";"
+	code += "cd "+path_+";git clone https://github.com/"+github_id+"/"+project_id+".git/;"
+	code += "cd `ls`; git config pager.diff false; git config --global core.pager cat; git log | grep '^commit';"
 	list_ = shell_exec(code).split('\n')
-	shell_exec("rm -rf "+compare_dir)
+	rmItem(compare_dir)
 	shell_exec("mkdir -p "+compare_dir)
 	cnt = 0
 	ffwe = compare_lst
@@ -83,46 +125,26 @@ if len(sys.argv) >= 5:
 			cnt += 1
 			kks = list_[no].split(' ')[1]
 			cl = str(cnt)
-			shell_exec("cp -R "+path_+" "+base_path+"/"+cl)
-			shell_exec("cd "+base_path+"/"+cl+"/"+project_id+";git checkout "+kks)
-			shell_exec("mv "+base_path+"/"+cl+"/"+project_id+" "+compare_dir+"/"+cl)
-			shell_exec("rm -rf "+compare_dir+"/"+cl+"/.git")
+			bpc = base_path+"/"+cl
+			cdc = compare_dir+"/"+cl
+			shell_exec("cp -R "+path_+" "+bpc)
+			shell_exec("cd "+bpc+"/"+project_id+";git checkout "+kks)
+			shell_exec("mv "+bpc+"/"+project_id+" "+cdc)
+			rmItem(cdc+"/.git")
 	cl = '1'
-	if compare_local and is_dir(compare_local) and is_dir(compare_dir+'/'+cl):
-		shell_exec('rm -rf '+compare_dir+'/'+cl)
-		shell_exec('cp -R '+compare_local+' '+compare_dir+'/'+cl)
-		shell_exec("rm -rf "+compare_dir+"/"+cl+"/.git")
+	cdc = compare_dir+'/'+cl
+	if compare_local and is_dir(compare_local) and is_dir(cdc):
+		rmItem(cdc)
+		shell_exec('cp -R '+compare_local+' '+cdc)
+		rmItem(cdc+'/.git')
 
 	if cnt < 2:
-		shell_exec("rm -rf "+compare_dir)
+		rmItem(compare_dir)
 		print '-'*80
 		print 'Index number of this project is out of range'
 		print '-'*80
 	else:
-		fde = ['1', '2']
-		cnt = 0
-		for nn in fde:
-			for root, dirs, files in os.walk(compare_dir+""+nn):
-				for file in files:
-					filepath = str(root+'/'+file)
-					pppth = filepath[len(compare_dir)+1:len(filepath)]
-					pth1 = (compare_dir+""+fde[cnt])
-					pth2 = (compare_dir+""+fde[0])
-					if cnt == 0:
-						pth2 = (compare_dir+""+fde[cnt+1])
-					pl1 = pth1+pppth
-					pl2 = pth2+pppth
-					oo_p1=pth1+'_/'
-					if not is_dir(oo_p1):
-						shell_exec('mkdir -p '+oo_p1)
-					md1 = md5file(pl1)
-					md2 = md5file(pl2)
-					if md1 and md2 and (md1==md2):
-						pass
-					else:
-						shell_exec('cp '+pl1+' '+oo_p1+(pppth.replace('/','／')))
-			cnt+=1
-		print '-'*80
+		compare_two_sources(compare_dir, True)
 		for no in shell_exec('ls '+compare_dir).split('\n'):
 			old_name = None
 			new_name = None
@@ -139,7 +161,7 @@ if len(sys.argv) >= 5:
 		for no in shell_exec('ls '+compare_dir).split('\n'):
 			print compare_dir+no
 		print '-'*80
-	shell_exec("rm -rf "+base_path)
+	rmItem(base_path)
 else:
 	print '-'*80
 	print 'python '+get_script_name()+' github_account_id project_id commit_number commit_number'
