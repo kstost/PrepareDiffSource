@@ -129,5 +129,7 @@ else:
 	print 'commit_number: if you give 1 then it means the second one of all commits'
 	print ''
 	print '[Usage]'
-	print 'python '+get_script_name()+' kstost project_id 0 1'
+	print '1. place '+get_script_name()+' file on your pc'
+	print '2. turn on terminal app and type below'
+	print '   python '+get_script_name()+' kstost PrepareDiffSource 0 1'
 	print '-'*80
