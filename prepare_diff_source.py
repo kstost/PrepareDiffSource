@@ -190,13 +190,14 @@ if len(sys.argv) >= 5:
 		print 'Index number of this project is out of range'
 		print '-'*80
 	else:
+		trm = 'trimmed_'
 		compare_two_sources(compare_dir, True)
 		for no in list_files(compare_dir):
 			old_name = None
 			new_name = None
 			if no.find('_') != -1:
 				old_name = no
-				new_name = 'trimmed_'+(no.replace('_',''))+'_'
+				new_name = trm+''+(no.replace('_',''))+'_'
 			else:
 				old_name = no
 				new_name = 'rawdata_'+no+'_'
@@ -204,9 +205,17 @@ if len(sys.argv) >= 5:
 				moveItm(old_name, new_name, compare_dir)
 		print '-'*80
 		print 'Files are downloaded on '+compare_dir+'\n'
+		diff_file_count = 0
 		for no in list_files(compare_dir):
-			print compare_dir+no
+			drnn = compare_dir+no
+			print drnn
+			if no.find(trm) > -1 and is_dir(drnn):
+				diff_file_count += len(list_files(drnn))
 		print '-'*80
+		if diff_file_count == 0:
+			print '\n'*100
+			print 'NOTHING DIFFERENT'
+			print '\n'*3
 	rmItem(base_path)
 else:
 	print '-'*80
