@@ -210,6 +210,7 @@ if len(sys.argv) >= 5:
 			drnn = compare_dir+no
 			print drnn
 			if no.find(trm) > -1 and is_dir(drnn):
+				print list_files(drnn)
 				diff_file_count += len(list_files(drnn))
 		print '-'*80
 		if diff_file_count == 0:
