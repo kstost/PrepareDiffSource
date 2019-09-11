@@ -38,6 +38,8 @@ def list_files(compare_dir): #qq
 	ddd = []
 	if is_safe_name(compare_dir):
 		ddd = shell_exec('ls "'+compare_dir+'"').strip().split('\n')
+	if len(ddd) == 1 and ddd[0] == '':
+		return []
 	return ddd
 
 def git_checkout(path, hashkey): #qq
