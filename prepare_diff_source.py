@@ -161,6 +161,17 @@ def get_commits_list(owner, repo):
 # <press return>
 # -------------------------------------
 
+if len(sys.argv) == 4:
+	if sys.argv[1] == 'list':
+		print '-' * 80
+		dnt = get_commits_list(sys.argv[2], sys.argv[3])
+		cnt = 0
+		for dd in dnt:
+			print ((' '*10)+str(cnt))[-4:] + ' : ' + dd['time'] + ' ' + dd['sha']
+			cnt+=1
+		print '-' * 80
+	sys.exit()
+
 if len(sys.argv) == 2:
 	path = os.path.abspath(sys.argv[1])
 	if is_dir(path):
